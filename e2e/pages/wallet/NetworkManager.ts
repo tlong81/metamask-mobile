@@ -113,7 +113,7 @@ class NetworkManager {
    */
   getBaseControlBarText(caipChainId: CaipChainId): DetoxElement {
     return Matchers.getElementByID(
-      `${WalletViewSelectorsIDs.TOKEN_NETWORK_FILTER}-${caipChainId}`,
+      `${NetworkManagerSelectorIDs.BASE_CONTROL_BAR_NETWORK_LABEL}-${caipChainId}`,
     );
   }
 

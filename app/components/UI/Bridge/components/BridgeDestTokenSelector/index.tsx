@@ -58,7 +58,7 @@ export const BridgeDestTokenSelector: React.FC = () => {
   const selectedDestToken = useSelector(selectDestToken);
   const selectedDestChainId = useSelector(selectSelectedDestChainId);
   const selectedSourceToken = useSelector(selectSourceToken);
-  const { allTokens, tokensToRender, pending } = useTokens({
+  const { tokens: tokensList, pending } = useTokens({
     topTokensChainId: selectedDestChainId,
     balanceChainIds: selectedDestChainId ? [selectedDestChainId] : [],
     tokensToExclude: selectedSourceToken ? [selectedSourceToken] : [],
@@ -162,8 +162,7 @@ export const BridgeDestTokenSelector: React.FC = () => {
         ) : undefined
       }
       renderTokenItem={renderToken}
-      allTokens={allTokens}
-      tokensToRender={tokensToRender}
+      tokensList={tokensList}
       pending={pending}
       chainIdToFetchMetadata={selectedDestChainId}
       scrollResetKey={selectedDestChainId}

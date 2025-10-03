@@ -6,16 +6,13 @@ import rewardsReducer, {
   setSeasonStatusLoading,
   setSeasonStatusError,
   setReferralDetailsLoading,
-  setReferralDetailsError,
   resetRewardsState,
   setOnboardingActiveStep,
   resetOnboarding,
   setCandidateSubscriptionId,
   setGeoRewardsMetadata,
   setGeoRewardsMetadataLoading,
-  setGeoRewardsMetadataError,
   setHideUnlinkedAccountsBanner,
-  setHideCurrentAccountNotOptedInBanner,
   setActiveBoosts,
   setActiveBoostsLoading,
   setActiveBoostsError,
@@ -29,7 +26,6 @@ import {
   SeasonStatusState,
   RewardClaimStatus,
 } from '../../core/Engine/controllers/rewards-controller/types';
-import { CaipAccountId } from '@metamask/utils';
 
 describe('rewardsReducer', () => {
   const initialState: RewardsState = {
@@ -63,7 +59,6 @@ describe('rewardsReducer', () => {
     optinAllowedForGeoLoading: false,
     optinAllowedForGeoError: false,
     hideUnlinkedAccountsBanner: false,
-    hideCurrentAccountNotOptedInBanner: [],
 
     activeBoosts: null,
     activeBoostsLoading: false,
@@ -503,54 +498,6 @@ describe('rewardsReducer', () => {
       });
     });
 
-    describe('setReferralDetailsError', () => {
-      it('should set referral details error to true', () => {
-        // Arrange
-        const action = setReferralDetailsError(true);
-
-        // Act
-        const state = rewardsReducer(initialState, action);
-
-        // Assert
-        expect(state.referralDetailsError).toBe(true);
-      });
-
-      it('should set referral details error to false', () => {
-        // Arrange
-        const stateWithError = {
-          ...initialState,
-          referralDetailsError: true,
-        };
-        const action = setReferralDetailsError(false);
-
-        // Act
-        const state = rewardsReducer(stateWithError, action);
-
-        // Assert
-        expect(state.referralDetailsError).toBe(false);
-      });
-
-      it('should not affect other state properties', () => {
-        // Arrange
-        const stateWithData = {
-          ...initialState,
-          referralCode: 'TEST123',
-          refereeCount: 5,
-          referralDetailsLoading: true,
-        };
-        const action = setReferralDetailsError(true);
-
-        // Act
-        const state = rewardsReducer(stateWithData, action);
-
-        // Assert
-        expect(state.referralDetailsError).toBe(true);
-        expect(state.referralCode).toBe('TEST123');
-        expect(state.refereeCount).toBe(5);
-        expect(state.referralDetailsLoading).toBe(true);
-      });
-    });
-
     describe('setSeasonStatusLoading', () => {
       it('should set season status loading to true when no season data exists', () => {
         // Arrange
@@ -957,54 +904,6 @@ describe('rewardsReducer', () => {
       });
     });
 
-    describe('setGeoRewardsMetadataError', () => {
-      it('should set geo rewards metadata error to true', () => {
-        // Arrange
-        const action = setGeoRewardsMetadataError(true);
-
-        // Act
-        const state = rewardsReducer(initialState, action);
-
-        // Assert
-        expect(state.optinAllowedForGeoError).toBe(true);
-      });
-
-      it('should set geo rewards metadata error to false', () => {
-        // Arrange
-        const stateWithError = {
-          ...initialState,
-          optinAllowedForGeoError: true,
-        };
-        const action = setGeoRewardsMetadataError(false);
-
-        // Act
-        const state = rewardsReducer(stateWithError, action);
-
-        // Assert
-        expect(state.optinAllowedForGeoError).toBe(false);
-      });
-
-      it('should not affect other geo metadata properties', () => {
-        // Arrange
-        const stateWithGeoData = {
-          ...initialState,
-          geoLocation: 'US',
-          optinAllowedForGeo: true,
-          optinAllowedForGeoLoading: true,
-        };
-        const action = setGeoRewardsMetadataError(true);
-
-        // Act
-        const state = rewardsReducer(stateWithGeoData, action);
-
-        // Assert
-        expect(state.optinAllowedForGeoError).toBe(true);
-        expect(state.geoLocation).toBe('US');
-        expect(state.optinAllowedForGeo).toBe(true);
-        expect(state.optinAllowedForGeoLoading).toBe(true);
-      });
-    });
-
     describe('setCandidateSubscriptionId', () => {
       it('should set candidate subscription ID to a string value', () => {
         // Arrange
@@ -1125,158 +1024,6 @@ describe('rewardsReducer', () => {
       });
     });
 
-    describe('setHideCurrentAccountNotOptedInBanner', () => {
-      it('should add new account banner entry when it does not exist', () => {
-        // Arrange
-        const accountId: CaipAccountId =
-          'eip155:1:0x1234567890123456789012345678901234567890';
-        const action = setHideCurrentAccountNotOptedInBanner({
-          accountId,
-          hide: true,
-        });
-
-        // Act
-        const state = rewardsReducer(initialState, action);
-
-        // Assert
-        expect(state.hideCurrentAccountNotOptedInBanner).toHaveLength(1);
-        expect(state.hideCurrentAccountNotOptedInBanner[0]).toEqual({
-          caipAccountId: accountId,
-          hide: true,
-        });
-      });
-
-      it('should update existing account banner entry', () => {
-        // Arrange
-        const accountId: CaipAccountId =
-          'eip155:1:0x1234567890123456789012345678901234567890';
-        const stateWithExistingEntry = {
-          ...initialState,
-          hideCurrentAccountNotOptedInBanner: [
-            {
-              caipAccountId: accountId,
-              hide: false,
-            },
-          ],
-        };
-        const action = setHideCurrentAccountNotOptedInBanner({
-          accountId,
-          hide: true,
-        });
-
-        // Act
-        const state = rewardsReducer(stateWithExistingEntry, action);
-
-        // Assert
-        expect(state.hideCurrentAccountNotOptedInBanner).toHaveLength(1);
-        expect(state.hideCurrentAccountNotOptedInBanner[0]).toEqual({
-          caipAccountId: accountId,
-          hide: true,
-        });
-      });
-
-      it('should add multiple different account entries', () => {
-        // Arrange
-        const accountId1: CaipAccountId =
-          'eip155:1:0x1111111111111111111111111111111111111111';
-        const accountId2: CaipAccountId =
-          'eip155:1:0x2222222222222222222222222222222222222222';
-
-        let currentState = initialState;
-
-        // Add first account
-        const action1 = setHideCurrentAccountNotOptedInBanner({
-          accountId: accountId1,
-          hide: true,
-        });
-        currentState = rewardsReducer(currentState, action1);
-
-        // Add second account
-        const action2 = setHideCurrentAccountNotOptedInBanner({
-          accountId: accountId2,
-          hide: false,
-        });
-
-        // Act
-        const state = rewardsReducer(currentState, action2);
-
-        // Assert
-        expect(state.hideCurrentAccountNotOptedInBanner).toHaveLength(2);
-        expect(state.hideCurrentAccountNotOptedInBanner[0]).toEqual({
-          caipAccountId: accountId1,
-          hide: true,
-        });
-        expect(state.hideCurrentAccountNotOptedInBanner[1]).toEqual({
-          caipAccountId: accountId2,
-          hide: false,
-        });
-      });
-
-      it('should update specific account without affecting others', () => {
-        // Arrange
-        const accountId1: CaipAccountId =
-          'eip155:1:0x1111111111111111111111111111111111111111';
-        const accountId2: CaipAccountId =
-          'eip155:1:0x2222222222222222222222222222222222222222';
-        const stateWithMultipleEntries = {
-          ...initialState,
-          hideCurrentAccountNotOptedInBanner: [
-            {
-              caipAccountId: accountId1,
-              hide: true,
-            },
-            {
-              caipAccountId: accountId2,
-              hide: false,
-            },
-          ],
-        };
-        const action = setHideCurrentAccountNotOptedInBanner({
-          accountId: accountId1,
-          hide: false,
-        });
-
-        // Act
-        const state = rewardsReducer(stateWithMultipleEntries, action);
-
-        // Assert
-        expect(state.hideCurrentAccountNotOptedInBanner).toHaveLength(2);
-        expect(state.hideCurrentAccountNotOptedInBanner[0]).toEqual({
-          caipAccountId: accountId1,
-          hide: false, // Updated
-        });
-        expect(state.hideCurrentAccountNotOptedInBanner[1]).toEqual({
-          caipAccountId: accountId2,
-          hide: false, // Unchanged
-        });
-      });
-
-      it('should not affect other state properties', () => {
-        // Arrange
-        const stateWithData = {
-          ...initialState,
-          activeTab: 'activity' as const,
-          referralCode: 'TEST123',
-          hideUnlinkedAccountsBanner: true,
-        };
-        const accountId: CaipAccountId =
-          'eip155:1:0x1234567890123456789012345678901234567890';
-        const action = setHideCurrentAccountNotOptedInBanner({
-          accountId,
-          hide: true,
-        });
-
-        // Act
-        const state = rewardsReducer(stateWithData, action);
-
-        // Assert
-        expect(state.hideCurrentAccountNotOptedInBanner).toHaveLength(1);
-        expect(state.activeTab).toBe('activity');
-        expect(state.referralCode).toBe('TEST123');
-        expect(state.hideUnlinkedAccountsBanner).toBe(true);
-      });
-    });
-
     describe('resetRewardsState', () => {
       it('should reset all state to initial values', () => {
         // Arrange
@@ -1336,13 +1083,6 @@ describe('rewardsReducer', () => {
           optinAllowedForGeo: true,
           optinAllowedForGeoLoading: false,
           hideUnlinkedAccountsBanner: true,
-          hideCurrentAccountNotOptedInBanner: [
-            {
-              caipAccountId:
-                'eip155:1:0x1234567890123456789012345678901234567890' as CaipAccountId,
-              hide: true,
-            },
-          ],
           activeBoosts: [
             {
               id: 'boost-1',
@@ -1375,7 +1115,7 @@ describe('rewardsReducer', () => {
     });
 
     describe('persist/REHYDRATE', () => {
-      it('should reset all state to initial values including banner preferences', () => {
+      it('should reset all state to initial values and only restore hideUnlinkedAccountsBanner', () => {
         // Arrange
         const persistedRewardsState: RewardsState = {
           activeTab: 'activity',
@@ -1421,14 +1161,7 @@ describe('rewardsReducer', () => {
           geoLocation: 'CA',
           optinAllowedForGeo: true,
           optinAllowedForGeoLoading: false,
-          hideUnlinkedAccountsBanner: true, // This will be reset
-          hideCurrentAccountNotOptedInBanner: [
-            {
-              caipAccountId:
-                'eip155:1:0x1234567890123456789012345678901234567890' as CaipAccountId,
-              hide: true,
-            },
-          ], // This will be reset
+          hideUnlinkedAccountsBanner: true, // This should be preserved
           activeBoosts: [
             {
               id: 'boost-1',
@@ -1461,30 +1194,20 @@ describe('rewardsReducer', () => {
         // Act
         const state = rewardsReducer(initialState, rehydrateAction);
 
-        // Assert - State should be reset to initial values but preserve banner preferences
+        // Assert - All state should be reset to initial except hideUnlinkedAccountsBanner
         const expectedState = {
           ...initialState,
-          hideUnlinkedAccountsBanner:
-            persistedRewardsState.hideUnlinkedAccountsBanner,
-          hideCurrentAccountNotOptedInBanner:
-            persistedRewardsState.hideCurrentAccountNotOptedInBanner,
+          hideUnlinkedAccountsBanner: true, // Only this should be preserved
         };
         expect(state).toEqual(expectedState);
       });
 
-      it('should reset banner preferences regardless of persisted values', () => {
+      it('should handle rehydration with hideUnlinkedAccountsBanner false', () => {
         // Arrange
         const persistedRewardsState: RewardsState = {
           ...initialState,
           referralCode: 'SOME_CODE', // This will be reset
-          hideUnlinkedAccountsBanner: true, // This will be reset to false
-          hideCurrentAccountNotOptedInBanner: [
-            {
-              caipAccountId:
-                'eip155:1:0x1234567890123456789012345678901234567890' as CaipAccountId,
-              hide: true,
-            },
-          ], // This will be reset to empty array
+          hideUnlinkedAccountsBanner: false, // This should be preserved
         };
         const rehydrateAction = {
           type: 'persist/REHYDRATE',
@@ -1497,12 +1220,7 @@ describe('rewardsReducer', () => {
         const state = rewardsReducer(initialState, rehydrateAction);
 
         // Assert
-        expect(state.hideUnlinkedAccountsBanner).toBe(
-          persistedRewardsState.hideUnlinkedAccountsBanner,
-        );
-        expect(state.hideCurrentAccountNotOptedInBanner).toEqual(
-          persistedRewardsState.hideCurrentAccountNotOptedInBanner,
-        );
+        expect(state.hideUnlinkedAccountsBanner).toBe(false);
         expect(state.referralCode).toBe(null); // Should be reset
       });
 

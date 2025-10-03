@@ -23,7 +23,6 @@ interface useRewardOptinSummaryResult {
   hasError: boolean;
   refresh: () => Promise<void>;
   currentAccountOptedIn: boolean | null;
-  currentAccountSupported: boolean | null;
 }
 
 interface useRewardOptinSummaryOptions {
@@ -43,9 +42,6 @@ export const useRewardOptinSummary = (
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentAccountOptedIn, setCurrentAccountOptedIn] = useState<
-    boolean | null
-  >(null);
-  const [currentAccountSupported, setCurrentAccountSupported] = useState<
     boolean | null
   >(null);
   const isLoadingRef = useRef(false);
@@ -72,27 +68,19 @@ export const useRewardOptinSummary = (
     try {
       setIsLoading(true);
       setHasError(false);
-      setCurrentAccountOptedIn(null);
-      setCurrentAccountSupported(null);
-      const supportedAccounts: InternalAccount[] =
-        accounts?.filter((account: InternalAccount) =>
-          Engine.controllerMessenger.call(
-            'RewardsController:isOptInSupported',
-            account,
-          ),
-        ) || [];
+      const addresses = accounts.map((account) => account.address);
 
       const response: OptInStatusDto = await Engine.controllerMessenger.call(
         'RewardsController:getOptInStatus',
-        { addresses: supportedAccounts.map((account) => account.address) },
+        { addresses },
       );
 
       // Map all accounts with their opt-in status
       const accountsWithStatus: AccountWithOptInStatus[] = [];
       let selectedAccountStatus = false;
 
-      for (let i = 0; i < supportedAccounts.length; i++) {
-        const account = supportedAccounts[i];
+      for (let i = 0; i < accounts.length; i++) {
+        const account = accounts[i];
         const hasOptedIn = response.ois[i] || false;
 
         accountsWithStatus.push({ ...account, hasOptedIn });
@@ -105,16 +93,9 @@ export const useRewardOptinSummary = (
 
       setOptedInAccounts(accountsWithStatus);
       setCurrentAccountOptedIn(selectedAccountStatus);
-      setCurrentAccountSupported(
-        supportedAccounts.some(
-          (account) => account.address === selectedAccount?.address,
-        ),
-      );
     } catch (error) {
       Logger.log('useRewardOptinSummary: Failed to fetch opt-in status', error);
       setHasError(true);
-      setCurrentAccountSupported(null);
-      setCurrentAccountOptedIn(null);
     } finally {
       isLoadingRef.current = false;
       setIsLoading(false);
@@ -142,6 +123,5 @@ export const useRewardOptinSummary = (
     hasError,
     refresh: fetchOptInStatus,
     currentAccountOptedIn,
-    currentAccountSupported,
   };
 };

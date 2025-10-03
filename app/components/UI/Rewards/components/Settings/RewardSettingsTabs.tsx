@@ -20,7 +20,10 @@ import { InternalAccount } from '@metamask/keyring-internal-api';
 import { strings } from '../../../../../../locales/i18n';
 import { TabsList } from '../../../../../component-library/components-temp/Tabs';
 import AccountDisplayItem from '../AccountDisplayItem/AccountDisplayItem';
-import RewardsInfoBanner from '../RewardsInfoBanner';
+import Banner, {
+  BannerVariant,
+  BannerAlertSeverity,
+} from '../../../../../component-library/components/Banners/Banner';
 import RewardsErrorBanner from '../RewardsErrorBanner';
 import { TabViewProps } from '../../../Perps/components/PerpsMarketTabs/PerpsMarketTabs.types';
 import { Skeleton } from '../../../../../component-library/components/Skeleton';
@@ -266,7 +269,9 @@ const RewardSettingsTabs: React.FC<RewardSettingsTabsProps> = ({
           </Box>
         ) : (
           <Box twClassName="py-8">
-            <RewardsInfoBanner
+            <Banner
+              variant={BannerVariant.Alert}
+              severity={BannerAlertSeverity.Info}
               title={strings('rewards.settings.all_accounts_linked_title')}
               description={strings(
                 'rewards.settings.all_accounts_linked_description',

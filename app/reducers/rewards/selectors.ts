@@ -73,10 +73,6 @@ export const selectCandidateSubscriptionId = (state: RootState) =>
 export const selectHideUnlinkedAccountsBanner = (state: RootState) =>
   state.rewards.hideUnlinkedAccountsBanner;
 
-export const selectHideCurrentAccountNotOptedInBannerArray = (
-  state: RootState,
-) => state.rewards.hideCurrentAccountNotOptedInBanner;
-
 export const selectActiveBoosts = (state: RootState) =>
   state.rewards.activeBoosts;
 

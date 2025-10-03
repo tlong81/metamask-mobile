@@ -50,6 +50,7 @@ export const AddressList = () => {
       const copyAddressToClipboard = async () => {
         await ClipboardManager.setString(item.account.address);
       };
+
       return (
         <MultichainAddressRow
           chainId={item.scope}
@@ -72,7 +73,7 @@ export const AddressList = () => {
                       address: item.account.address,
                       networkName: item.networkName,
                       chainId: item.scope,
-                      groupId,
+                      accountName: item.account.metadata.name,
                     },
                   },
                 );
@@ -83,7 +84,7 @@ export const AddressList = () => {
         />
       );
     },
-    [navigation, groupId],
+    [navigation],
   );
 
   useLayoutEffect(() => {

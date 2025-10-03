@@ -1,11 +1,5 @@
 // Third party dependencies.
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Animated, ScrollView, LayoutChangeEvent } from 'react-native';
 
 // External dependencies.
@@ -28,9 +22,6 @@ const TabsBar: React.FC<TabsBarProps> = ({
   ...boxProps
 }) => {
   const tw = useTailwind();
-
-  // Enhanced TabsBar with animated underline and smart layout detection
-
   const scrollViewRef = useRef<ScrollView>(null);
 
   const underlineAnimated = useRef(new Animated.Value(0)).current;
@@ -38,45 +29,26 @@ const TabsBar: React.FC<TabsBarProps> = ({
   const tabLayouts = useRef<{ x: number; width: number }[]>([]);
   const isInitialized = useRef(false);
   const currentAnimation = useRef<Animated.CompositeAnimation | null>(null);
-  const rafId = useRef<number | null>(null);
   const [isLayoutReady, setIsLayoutReady] = useState(false);
   const pendingActiveIndex = useRef<number | null>(null);
-  const [hasValidDimensions, setHasValidDimensions] = useState(false);
-  const [isInitializedState, setIsInitializedState] = useState(false);
-  const [hasAllTabLayouts, setHasAllTabLayouts] = useState(false);
 
   // State for automatic overflow detection
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  // Reset layout data when tabs change structurally (not just re-renders)
-  const tabKeys = useMemo(() => tabs.map((tab) => tab.key).join(','), [tabs]);
-
+  // Reset layout data when tabs change
   useEffect(() => {
-    // Check if reset is needed
-
-    // Only reset if tabs length changed or if we don't have layouts yet
-    const shouldReset =
-      tabLayouts.current.length !== tabs.length ||
-      tabLayouts.current.every((layout) => !layout);
-
-    if (shouldReset) {
-      // Reset all layout data and state
-      tabLayouts.current = new Array(tabs.length);
-      isInitialized.current = false;
-      setIsInitializedState(false);
-      setScrollEnabled(false);
-      setIsLayoutReady(false);
-      setHasValidDimensions(false);
-      setHasAllTabLayouts(false);
-      pendingActiveIndex.current = null;
-      // Stop any ongoing animation when tabs change
-      if (currentAnimation.current) {
-        currentAnimation.current.stop();
-        currentAnimation.current = null;
-      }
+    tabLayouts.current = new Array(tabs.length);
+    isInitialized.current = false;
+    setScrollEnabled(false);
+    setIsLayoutReady(false);
+    pendingActiveIndex.current = null;
+    // Stop any ongoing animation when tabs change
+    if (currentAnimation.current) {
+      currentAnimation.current.stop();
+      currentAnimation.current = null;
     }
-  }, [tabKeys, tabs.length]);
+  }, [tabs.length]);
 
   // Improved animation function that handles race conditions
   const animateToTab = useCallback(
@@ -93,13 +65,12 @@ const TabsBar: React.FC<TabsBarProps> = ({
       }
 
       const activeTabLayout = tabLayouts.current[targetIndex];
-
       if (
         !activeTabLayout ||
         typeof activeTabLayout.x !== 'number' ||
         typeof activeTabLayout.width !== 'number'
       ) {
-        // Store as pending for when layout measurement completes
+        // If layout data isn't available yet, store this as a pending animation
         pendingActiveIndex.current = targetIndex;
         return;
       }
@@ -111,52 +82,25 @@ const TabsBar: React.FC<TabsBarProps> = ({
       const isFirstInitialization = !isInitialized.current;
 
       if (isFirstInitialization) {
-        // First initialization - setting initial position
         // Set initial position without animation on first render
         underlineAnimated.setValue(activeTabLayout.x);
         underlineWidthAnimated.setValue(activeTabLayout.width);
         isInitialized.current = true;
-
-        // Use requestAnimationFrame to ensure state updates happen in the next frame
-        // This ensures the component re-renders with the updated state
-        // In tests, update synchronously to avoid act() warnings
-        if (process.env.JEST_WORKER_ID) {
-          setIsInitializedState(true);
-          setHasValidDimensions(true);
-          setIsLayoutReady(true);
-        } else {
-          rafId.current = requestAnimationFrame(() => {
-            setIsInitializedState(true);
-            setHasValidDimensions(true);
-            setIsLayoutReady(true);
-            // First initialization complete
-            rafId.current = null;
-          });
-        }
       } else {
-        // Subsequent animation - animating to new position
-
-        // Cancel any existing animation immediately for rapid clicking
-        if (currentAnimation.current) {
-          (currentAnimation.current as Animated.CompositeAnimation).stop();
-          currentAnimation.current = null;
-        }
-
-        // Ensure hasValidDimensions is true for subsequent animations
-        setHasValidDimensions(true);
-
         // Always animate for subsequent tab changes, even if we're switching
         // to a tab that just got its layout measured
         const animation = Animated.parallel([
-          Animated.timing(underlineAnimated, {
+          Animated.spring(underlineAnimated, {
             toValue: activeTabLayout.x,
-            duration: 200, // Fast and snappy
             useNativeDriver: false,
+            tension: 300,
+            friction: 30,
           }),
-          Animated.timing(underlineWidthAnimated, {
+          Animated.spring(underlineWidthAnimated, {
             toValue: activeTabLayout.width,
-            duration: 200, // Fast and snappy
             useNativeDriver: false,
+            tension: 300,
+            friction: 30,
           }),
         ]);
 
@@ -180,9 +124,9 @@ const TabsBar: React.FC<TabsBarProps> = ({
     [scrollEnabled, underlineAnimated, underlineWidthAnimated],
   );
 
-  // FIXED: Consolidated animation effect - prevents infinite loops by handling all animation triggers in one place
+  // Animate underline when active tab changes
   useEffect(() => {
-    // Don't animate if no active tab
+    // If activeIndex is -1, no tab is active, so don't animate underline
     if (activeIndex < 0) {
       // Stop any ongoing animation when no tab is active
       if (currentAnimation.current) {
@@ -192,18 +136,16 @@ const TabsBar: React.FC<TabsBarProps> = ({
       return;
     }
 
-    // Check if we have the necessary layout data for the active tab
-    const activeTabLayout = tabLayouts.current[activeIndex];
-    const hasActiveTabLayout = activeTabLayout && activeTabLayout.width > 0;
+    animateToTab(activeIndex);
+  }, [activeIndex, animateToTab]);
 
-    // Only animate if we have valid layout data for the active tab
-    // This prevents infinite loops by only triggering when we actually have the data needed
-    if (hasActiveTabLayout) {
+  // Ensure underline is initialized when layout becomes ready
+  useEffect(() => {
+    if (isLayoutReady && !isInitialized.current && activeIndex >= 0) {
+      // Force initialization when layout is ready but underline hasn't been initialized yet
       animateToTab(activeIndex);
     }
-    // If we don't have layout data, the animation will be triggered
-    // when handleTabLayout receives the layout information
-  }, [activeIndex, animateToTab]);
+  }, [isLayoutReady, activeIndex, animateToTab]);
 
   // Check if content overflows and update scroll state
   useEffect(() => {
@@ -237,16 +179,13 @@ const TabsBar: React.FC<TabsBarProps> = ({
   const handleTabLayout = useCallback(
     (index: number, layoutEvent: LayoutChangeEvent) => {
       const { x, width } = layoutEvent.nativeEvent.layout;
-      // Handle tab layout measurement
 
       // Validate input parameters
       if (typeof index !== 'number' || index < 0 || index >= tabs.length) {
-        // Invalid index parameters
         return;
       }
 
       if (typeof x !== 'number' || typeof width !== 'number' || width <= 0) {
-        // Invalid layout data
         return;
       }
 
@@ -257,24 +196,10 @@ const TabsBar: React.FC<TabsBarProps> = ({
 
       // Store the wrapper dimensions directly
       tabLayouts.current[index] = { x, width };
-      // Store layout data for this tab
 
-      // Check if we now have all tab layouts
-      const allLayoutsAvailable = tabLayouts.current.every(
-        (layout, i) =>
-          i >= tabs.length ||
-          (layout && typeof layout.width === 'number' && layout.width > 0),
-      );
-
-      if (allLayoutsAvailable && !hasAllTabLayouts) {
-        // All tab layouts are now available
-        setHasAllTabLayouts(true);
-      }
-
-      // FIXED: Only trigger animation if this is the active tab AND we haven't initialized yet
-      // This prevents redundant animation calls since the main useEffect will handle most cases
-      if (index === activeIndex && activeIndex >= 0 && !isInitialized.current) {
-        // This is the active tab and we haven't initialized yet, animate to it
+      // If this is the active tab, try to animate to it (handles both initialization and updates)
+      if (index === activeIndex && activeIndex >= 0) {
+        // Use the improved animation function to handle initialization properly
         animateToTab(activeIndex);
       }
 
@@ -305,32 +230,25 @@ const TabsBar: React.FC<TabsBarProps> = ({
           setIsLayoutReady(true);
         }
 
-        // Layout is ready when all tabs are measured - the main useEffect will handle animation
+        // CRITICAL FIX: If we haven't initialized the underline yet and we now have all layouts,
+        // try to initialize it for the active tab
+        if (
+          !isInitialized.current &&
+          activeIndex >= 0 &&
+          activeIndex < tabLayouts.current.length
+        ) {
+          const activeTabLayout = tabLayouts.current[activeIndex];
+          if (
+            activeTabLayout &&
+            typeof activeTabLayout.x === 'number' &&
+            typeof activeTabLayout.width === 'number'
+          ) {
+            animateToTab(activeIndex);
+          }
+        }
       }
     },
-    [
-      activeIndex,
-      animateToTab,
-      containerWidth,
-      isLayoutReady,
-      hasAllTabLayouts,
-      tabs,
-    ],
-  );
-
-  // Cleanup effect to cancel requestAnimationFrame on unmount
-  useEffect(
-    () => () => {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-        rafId.current = null;
-      }
-      if (currentAnimation.current) {
-        currentAnimation.current.stop();
-        currentAnimation.current = null;
-      }
-    },
-    [],
+    [tabs.length, activeIndex, animateToTab, containerWidth, isLayoutReady],
   );
 
   const handleTabPress = (index: number) => {
@@ -362,32 +280,31 @@ const TabsBar: React.FC<TabsBarProps> = ({
             twClassName="relative gap-6"
           >
             {tabs.map((tab, index) => (
-              <Tab
+              <Box
                 key={tab.key}
-                label={tab.label}
-                isActive={index === activeIndex}
-                isDisabled={tab.isDisabled}
-                onPress={() => handleTabPress(index)}
-                onLayout={(layoutEvent) => handleTabLayout(index, layoutEvent)}
-                testID={`${testID}-tab-${index}`}
-              />
+                onLayout={(layoutEvent: unknown) =>
+                  handleTabLayout(index, layoutEvent as LayoutChangeEvent)
+                }
+              >
+                <Tab
+                  label={tab.label}
+                  isActive={index === activeIndex}
+                  isDisabled={tab.isDisabled}
+                  onPress={() => handleTabPress(index)}
+                  testID={`${testID}-tab-${index}`}
+                />
+              </Box>
             ))}
 
-            {/* Animated underline for scrollable tabs - only show if there's an active tab and it's initialized */}
-            {(() => {
-              const shouldShow =
-                activeIndex >= 0 && isInitializedState && hasValidDimensions;
-              return (
-                shouldShow && (
-                  <Animated.View
-                    style={tw.style('absolute bottom-0 h-0.5 bg-icon-default', {
-                      width: underlineWidthAnimated,
-                      transform: [{ translateX: underlineAnimated }],
-                    })}
-                  />
-                )
-              );
-            })()}
+            {/* Animated underline for scrollable tabs - only show if there's an active tab */}
+            {activeIndex >= 0 && (
+              <Animated.View
+                style={tw.style('absolute bottom-0 h-0.5 bg-icon-default', {
+                  width: underlineWidthAnimated,
+                  transform: [{ translateX: underlineAnimated }],
+                })}
+              />
+            )}
           </Box>
         </ScrollView>
       ) : (
@@ -397,32 +314,31 @@ const TabsBar: React.FC<TabsBarProps> = ({
           twClassName="relative gap-6"
         >
           {tabs.map((tab, index) => (
-            <Tab
+            <Box
               key={tab.key}
-              label={tab.label}
-              isActive={index === activeIndex}
-              isDisabled={tab.isDisabled}
-              onPress={() => handleTabPress(index)}
-              onLayout={(layoutEvent) => handleTabLayout(index, layoutEvent)}
-              testID={`${testID}-tab-${index}`}
-            />
+              onLayout={(layoutEvent: unknown) =>
+                handleTabLayout(index, layoutEvent as LayoutChangeEvent)
+              }
+            >
+              <Tab
+                label={tab.label}
+                isActive={index === activeIndex}
+                isDisabled={tab.isDisabled}
+                onPress={() => handleTabPress(index)}
+                testID={`${testID}-tab-${index}`}
+              />
+            </Box>
           ))}
 
-          {/* Animated underline for non-scrollable tabs - only show if there's an active tab and it's initialized */}
-          {(() => {
-            const shouldShow =
-              activeIndex >= 0 && isInitializedState && hasValidDimensions;
-            return (
-              shouldShow && (
-                <Animated.View
-                  style={tw.style('absolute bottom-0 h-0.5 bg-icon-default', {
-                    width: underlineWidthAnimated,
-                    transform: [{ translateX: underlineAnimated }],
-                  })}
-                />
-              )
-            );
-          })()}
+          {/* Animated underline for non-scrollable tabs - only show if there's an active tab */}
+          {activeIndex >= 0 && (
+            <Animated.View
+              style={tw.style('absolute bottom-0 h-0.5 bg-icon-default', {
+                width: underlineWidthAnimated,
+                transform: [{ translateX: underlineAnimated }],
+              })}
+            />
+          )}
         </Box>
       )}
     </Box>

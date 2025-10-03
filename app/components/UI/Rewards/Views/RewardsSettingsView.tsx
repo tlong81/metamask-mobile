@@ -11,7 +11,10 @@ import { Box, Text, TextVariant } from '@metamask/design-system-react-native';
 import Button, {
   ButtonVariants,
 } from '../../../../component-library/components/Buttons/Button';
-import RewardsInfoBanner from '../components/RewardsInfoBanner';
+import Banner, {
+  BannerVariant,
+} from '../../../../component-library/components/Banners/Banner';
+import { BannerAlertSeverity } from '../../../../component-library/components/Banners/Banner/variants/BannerAlert/BannerAlert.types';
 import Toast from '../../../../component-library/components/Toast';
 import { ToastRef } from '../../../../component-library/components/Toast/Toast.types';
 import Routes from '../../../../constants/navigation/Routes';
@@ -94,11 +97,29 @@ const RewardsSettingsView: React.FC = () => {
           </Box>
 
           {isAccountSyncingInProgress && (
-            <RewardsInfoBanner
-              title={accountSyncingLoadingMessage}
-              description={strings('rewards.settings.accounts_syncing')}
-              testID="account-syncing-banner"
-            />
+            <Box twClassName="-mx-4">
+              <Banner
+                variant={BannerVariant.Alert}
+                severity={BannerAlertSeverity.Info}
+                title={accountSyncingLoadingMessage}
+                description={strings('rewards.settings.accounts_syncing')}
+                testID="account-syncing-banner"
+              />
+            </Box>
+          )}
+
+          {/* Current Account Not Opted In Banner */}
+          {hasAccountOptedIn === false && (
+            <Box twClassName="-mx-4">
+              <Banner
+                variant={BannerVariant.Alert}
+                severity={BannerAlertSeverity.Info}
+                title={strings('rewards.unlinked_account_info.title')}
+                description={strings(
+                  'rewards.unlinked_account_info.description',
+                )}
+              />
+            </Box>
           )}
 
           {/* Section 2: Account Tabs */}
